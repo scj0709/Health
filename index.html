@@ -224,6 +224,35 @@
     <div id="historyList"></div>
 </div>
 
+<div class="page" id="page-inbody">
+    <div class="page-title">🏋️ 인바디</div>
+    <div class="card">
+        <div class="card-title">새 인바디 기록</div>
+        <div style="display:flex;gap:8px;">
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">날짜</label><input type="date" id="inbodyDate"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">체중(kg)</label><input type="number" id="inbodyWeight" step="0.1" placeholder="70.0"></div>
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">골격근량(kg)</label><input type="number" id="inbodyMuscle" step="0.1" placeholder="30.0"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">체지방률(%)</label><input type="number" id="inbodyFat" step="0.1" placeholder="15.0"></div>
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">체지방량(kg)</label><input type="number" id="inbodyFatMass" step="0.1" placeholder="10.0"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">BMI</label><input type="number" id="inbodyBMI" step="0.1" placeholder="22.0"></div>
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">기초대사량(kcal)</label><input type="number" id="inbodyBMR" placeholder="1500"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">체수분(L)</label><input type="number" id="inbodyWater" step="0.1" placeholder="35.0"></div>
+            <div style="flex:1;"><label style="font-size:12px;color:#888;">인바디 점수</label><input type="number" id="inbodyScore" placeholder="75"></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:10px;" onclick="saveInbody()">기록 저장</button>
+    </div>
+    <div id="inbodyChart" style="margin-top:15px;"></div>
+    <div id="inbodyHistory" style="margin-top:15px;"></div>
+</div>
+
 <!-- 루틴 만들기 모달 -->
 <div class="modal" id="modal-create-routine">
     <div class="modal-header">
@@ -295,64 +324,135 @@
     <button onclick="switchTab('history')">
         <span class="icon">📊</span>기록
     </button>
+    <button onclick="switchTab('inbody')">
+        <span class="icon">🏋️</span>인바디
+    </button>
 </div>
 
 <script>
 const EXERCISES = [
-    {id:1,name:'벤치프레스',part:'가슴',type:'weight'},
-    {id:2,name:'인클라인 벤치프레스',part:'가슴',type:'weight'},
-    {id:3,name:'디클라인 벤치프레스',part:'가슴',type:'weight'},
-    {id:4,name:'덤벨 프레스',part:'가슴',type:'weight'},
+    // 가슴 (20종)
+    {id:1,name:'바벨 벤치프레스',part:'가슴',type:'weight'},
+    {id:2,name:'인클라인 바벨 벤치프레스',part:'가슴',type:'weight'},
+    {id:3,name:'디클라인 바벨 벤치프레스',part:'가슴',type:'weight'},
+    {id:4,name:'덤벨 벤치프레스',part:'가슴',type:'weight'},
     {id:5,name:'인클라인 덤벨 프레스',part:'가슴',type:'weight'},
-    {id:6,name:'덤벨 플라이',part:'가슴',type:'weight'},
-    {id:7,name:'케이블 크로스오버',part:'가슴',type:'weight'},
-    {id:8,name:'펙덱 플라이',part:'가슴',type:'weight'},
-    {id:9,name:'체스트 프레스 머신',part:'가슴',type:'weight'},
-    {id:10,name:'딥스',part:'가슴',type:'bodyweight'},
-    {id:11,name:'푸쉬업',part:'가슴',type:'bodyweight'},
-    {id:20,name:'데드리프트',part:'등',type:'weight'},
-    {id:21,name:'바벨 로우',part:'등',type:'weight'},
-    {id:22,name:'덤벨 로우',part:'등',type:'weight'},
-    {id:23,name:'랫 풀다운',part:'등',type:'weight'},
-    {id:24,name:'시티드 로우',part:'등',type:'weight'},
-    {id:25,name:'티바 로우',part:'등',type:'weight'},
-    {id:26,name:'풀업',part:'등',type:'bodyweight'},
-    {id:27,name:'친업',part:'등',type:'bodyweight'},
-    {id:28,name:'케이블 풀오버',part:'등',type:'weight'},
-    {id:29,name:'페이스 풀',part:'등',type:'weight'},
-    {id:40,name:'오버헤드 프레스',part:'어깨',type:'weight'},
+    {id:6,name:'디클라인 덤벨 프레스',part:'가슴',type:'weight'},
+    {id:7,name:'덤벨 플라이',part:'가슴',type:'weight'},
+    {id:8,name:'인클라인 덤벨 플라이',part:'가슴',type:'weight'},
+    {id:9,name:'케이블 크로스오버',part:'가슴',type:'weight'},
+    {id:10,name:'로우 케이블 크로스오버',part:'가슴',type:'weight'},
+    {id:11,name:'펙덱 플라이',part:'가슴',type:'weight'},
+    {id:12,name:'체스트 프레스 머신',part:'가슴',type:'weight'},
+    {id:13,name:'스미스 머신 벤치프레스',part:'가슴',type:'weight'},
+    {id:14,name:'스미스 머신 인클라인 프레스',part:'가슴',type:'weight'},
+    {id:15,name:'딥스 (가슴)',part:'가슴',type:'bodyweight'},
+    {id:16,name:'푸쉬업',part:'가슴',type:'bodyweight'},
+    {id:17,name:'와이드 푸쉬업',part:'가슴',type:'bodyweight'},
+    {id:18,name:'디클라인 푸쉬업',part:'가슴',type:'bodyweight'},
+    {id:19,name:'케이블 플라이',part:'가슴',type:'weight'},
+    {id:190,name:'풀오버 (가슴)',part:'가슴',type:'weight'},
+    // 등 (22종)
+    {id:20,name:'컨벤셔널 데드리프트',part:'등',type:'weight'},
+    {id:21,name:'바벨 벤트오버 로우',part:'등',type:'weight'},
+    {id:22,name:'덤벨 원암 로우',part:'등',type:'weight'},
+    {id:23,name:'와이드그립 랫 풀다운',part:'등',type:'weight'},
+    {id:24,name:'클로즈그립 랫 풀다운',part:'등',type:'weight'},
+    {id:25,name:'리버스그립 랫 풀다운',part:'등',type:'weight'},
+    {id:26,name:'시티드 케이블 로우',part:'등',type:'weight'},
+    {id:27,name:'티바 로우',part:'등',type:'weight'},
+    {id:28,name:'풀업',part:'등',type:'bodyweight'},
+    {id:29,name:'친업',part:'등',type:'bodyweight'},
+    {id:30,name:'케이블 풀오버',part:'등',type:'weight'},
+    {id:31,name:'페이스 풀',part:'등',type:'weight'},
+    {id:32,name:'펜들레이 로우',part:'등',type:'weight'},
+    {id:33,name:'체스트 서포티드 로우',part:'등',type:'weight'},
+    {id:34,name:'머신 로우',part:'등',type:'weight'},
+    {id:35,name:'시티드 로우 머신',part:'등',type:'weight'},
+    {id:36,name:'스미스 머신 로우',part:'등',type:'weight'},
+    {id:37,name:'스트레이트 암 풀다운',part:'등',type:'weight'},
+    {id:38,name:'슈러그 (바벨)',part:'등',type:'weight'},
+    {id:39,name:'슈러그 (덤벨)',part:'등',type:'weight'},
+    {id:391,name:'어시스트 풀업 머신',part:'등',type:'weight'},
+    {id:392,name:'인버티드 로우',part:'등',type:'bodyweight'},
+    // 어깨 (20종)
+    {id:40,name:'바벨 오버헤드 프레스',part:'어깨',type:'weight'},
     {id:41,name:'덤벨 숄더 프레스',part:'어깨',type:'weight'},
     {id:42,name:'사이드 레터럴 레이즈',part:'어깨',type:'weight'},
-    {id:43,name:'프론트 레이즈',part:'어깨',type:'weight'},
-    {id:44,name:'리어 델트 플라이',part:'어깨',type:'weight'},
-    {id:45,name:'업라이트 로우',part:'어깨',type:'weight'},
-    {id:46,name:'아놀드 프레스',part:'어깨',type:'weight'},
-    {id:47,name:'숄더 프레스 머신',part:'어깨',type:'weight'},
-    {id:60,name:'스쿼트',part:'하체',type:'weight'},
+    {id:43,name:'프론트 레이즈 (덤벨)',part:'어깨',type:'weight'},
+    {id:44,name:'프론트 레이즈 (바벨)',part:'어깨',type:'weight'},
+    {id:45,name:'리어 델트 플라이',part:'어깨',type:'weight'},
+    {id:46,name:'리어 델트 머신',part:'어깨',type:'weight'},
+    {id:47,name:'업라이트 로우',part:'어깨',type:'weight'},
+    {id:48,name:'아놀드 프레스',part:'어깨',type:'weight'},
+    {id:49,name:'숄더 프레스 머신',part:'어깨',type:'weight'},
+    {id:50,name:'스미스 머신 숄더 프레스',part:'어깨',type:'weight'},
+    {id:51,name:'케이블 레터럴 레이즈',part:'어깨',type:'weight'},
+    {id:52,name:'케이블 프론트 레이즈',part:'어깨',type:'weight'},
+    {id:53,name:'케이블 리어 델트',part:'어깨',type:'weight'},
+    {id:54,name:'케이블 업라이트 로우',part:'어깨',type:'weight'},
+    {id:55,name:'밴드 풀어파트',part:'어깨',type:'weight'},
+    {id:56,name:'Y레이즈',part:'어깨',type:'weight'},
+    {id:57,name:'루 레이즈',part:'어깨',type:'weight'},
+    {id:58,name:'핸드스탠드 푸쉬업',part:'어깨',type:'bodyweight'},
+    {id:59,name:'파이크 푸쉬업',part:'어깨',type:'bodyweight'},
+    // 하체 (25종)
+    {id:60,name:'바벨 백 스쿼트',part:'하체',type:'weight'},
     {id:61,name:'프론트 스쿼트',part:'하체',type:'weight'},
     {id:62,name:'레그 프레스',part:'하체',type:'weight'},
     {id:63,name:'레그 익스텐션',part:'하체',type:'weight'},
-    {id:64,name:'레그 컬',part:'하체',type:'weight'},
-    {id:65,name:'런지',part:'하체',type:'weight'},
-    {id:66,name:'불가리안 스플릿 스쿼트',part:'하체',type:'weight'},
-    {id:67,name:'힙 쓰러스트',part:'하체',type:'weight'},
-    {id:68,name:'카프 레이즈',part:'하체',type:'weight'},
-    {id:69,name:'루마니안 데드리프트',part:'하체',type:'weight'},
-    {id:70,name:'핵 스쿼트',part:'하체',type:'weight'},
-    {id:71,name:'고블릿 스쿼트',part:'하체',type:'weight'},
+    {id:64,name:'라잉 레그 컬',part:'하체',type:'weight'},
+    {id:65,name:'시티드 레그 컬',part:'하체',type:'weight'},
+    {id:66,name:'워킹 런지',part:'하체',type:'weight'},
+    {id:67,name:'리버스 런지',part:'하체',type:'weight'},
+    {id:68,name:'불가리안 스플릿 스쿼트',part:'하체',type:'weight'},
+    {id:69,name:'바벨 힙 쓰러스트',part:'하체',type:'weight'},
+    {id:70,name:'덤벨 힙 쓰러스트',part:'하체',type:'weight'},
+    {id:71,name:'스탠딩 카프 레이즈',part:'하체',type:'weight'},
+    {id:72,name:'시티드 카프 레이즈',part:'하체',type:'weight'},
+    {id:73,name:'루마니안 데드리프트',part:'하체',type:'weight'},
+    {id:74,name:'스티프 레그 데드리프트',part:'하체',type:'weight'},
+    {id:75,name:'핵 스쿼트',part:'하체',type:'weight'},
+    {id:76,name:'고블릿 스쿼트',part:'하체',type:'weight'},
+    {id:77,name:'스미스 머신 스쿼트',part:'하체',type:'weight'},
+    {id:78,name:'스모 데드리프트',part:'하체',type:'weight'},
+    {id:79,name:'덤벨 런지',part:'하체',type:'weight'},
+    {id:791,name:'스텝업',part:'하체',type:'weight'},
+    {id:792,name:'힙 어브덕션 머신',part:'하체',type:'weight'},
+    {id:793,name:'힙 어덕션 머신',part:'하체',type:'weight'},
+    {id:794,name:'글루트 킥백 머신',part:'하체',type:'weight'},
+    {id:795,name:'싱글 레그 프레스',part:'하체',type:'weight'},
+    // 이두 (14종)
     {id:80,name:'바벨 컬',part:'이두',type:'weight'},
     {id:81,name:'덤벨 컬',part:'이두',type:'weight'},
     {id:82,name:'해머 컬',part:'이두',type:'weight'},
-    {id:83,name:'프리처 컬',part:'이두',type:'weight'},
-    {id:84,name:'인클라인 덤벨 컬',part:'이두',type:'weight'},
-    {id:85,name:'케이블 컬',part:'이두',type:'weight'},
-    {id:86,name:'컨센트레이션 컬',part:'이두',type:'weight'},
+    {id:83,name:'프리처 컬 (바벨)',part:'이두',type:'weight'},
+    {id:84,name:'프리처 컬 (덤벨)',part:'이두',type:'weight'},
+    {id:85,name:'인클라인 덤벨 컬',part:'이두',type:'weight'},
+    {id:86,name:'케이블 컬',part:'이두',type:'weight'},
+    {id:87,name:'컨센트레이션 컬',part:'이두',type:'weight'},
+    {id:88,name:'이지바 컬',part:'이두',type:'weight'},
+    {id:89,name:'스파이더 컬',part:'이두',type:'weight'},
+    {id:891,name:'케이블 해머 컬 (로프)',part:'이두',type:'weight'},
+    {id:892,name:'머신 바이셉 컬',part:'이두',type:'weight'},
+    {id:893,name:'리버스 컬',part:'이두',type:'weight'},
+    {id:894,name:'21s 컬',part:'이두',type:'weight'},
+    // 삼두 (14종)
     {id:90,name:'클로즈그립 벤치프레스',part:'삼두',type:'weight'},
-    {id:91,name:'트라이셉스 푸쉬다운',part:'삼두',type:'weight'},
-    {id:92,name:'오버헤드 트라이셉스 익스텐션',part:'삼두',type:'weight'},
-    {id:93,name:'스컬크러셔',part:'삼두',type:'weight'},
-    {id:94,name:'킥백',part:'삼두',type:'weight'},
-    {id:95,name:'덤벨 오버헤드 익스텐션',part:'삼두',type:'weight'},
+    {id:91,name:'트라이셉스 푸쉬다운 (바)',part:'삼두',type:'weight'},
+    {id:92,name:'트라이셉스 푸쉬다운 (로프)',part:'삼두',type:'weight'},
+    {id:93,name:'오버헤드 케이블 익스텐션',part:'삼두',type:'weight'},
+    {id:94,name:'스컬크러셔 (이지바)',part:'삼두',type:'weight'},
+    {id:95,name:'스컬크러셔 (덤벨)',part:'삼두',type:'weight'},
+    {id:96,name:'킥백',part:'삼두',type:'weight'},
+    {id:97,name:'덤벨 오버헤드 익스텐션',part:'삼두',type:'weight'},
+    {id:98,name:'딥스 (삼두)',part:'삼두',type:'bodyweight'},
+    {id:99,name:'다이아몬드 푸쉬업',part:'삼두',type:'bodyweight'},
+    {id:991,name:'벤치 딥스',part:'삼두',type:'bodyweight'},
+    {id:992,name:'머신 트라이셉스 익스텐션',part:'삼두',type:'weight'},
+    {id:993,name:'원암 케이블 푸쉬다운',part:'삼두',type:'weight'},
+    {id:994,name:'JM 프레스',part:'삼두',type:'weight'},
+    // 복근 (16종)
     {id:100,name:'크런치',part:'복근',type:'bodyweight'},
     {id:101,name:'레그 레이즈',part:'복근',type:'bodyweight'},
     {id:102,name:'플랭크',part:'복근',type:'time'},
@@ -361,15 +461,47 @@ const EXERCISES = [
     {id:105,name:'바이시클 크런치',part:'복근',type:'bodyweight'},
     {id:106,name:'사이드 플랭크',part:'복근',type:'time'},
     {id:107,name:'ab 롤아웃',part:'복근',type:'bodyweight'},
+    {id:108,name:'케이블 크런치',part:'복근',type:'weight'},
+    {id:109,name:'디클라인 크런치',part:'복근',type:'bodyweight'},
+    {id:110,name:'행잉 니 레이즈',part:'복근',type:'bodyweight'},
+    {id:111,name:'마운틴 클라이머',part:'복근',type:'bodyweight'},
+    {id:112,name:'토 터치 크런치',part:'복근',type:'bodyweight'},
+    {id:113,name:'데드 버그',part:'복근',type:'bodyweight'},
+    {id:114,name:'우드 촙 (케이블)',part:'복근',type:'weight'},
+    {id:115,name:'팔로프 프레스',part:'복근',type:'weight'},
+    // 전완 (6종)
+    {id:130,name:'리스트 컬',part:'전완',type:'weight'},
+    {id:131,name:'리버스 리스트 컬',part:'전완',type:'weight'},
+    {id:132,name:'파머스 워크',part:'전완',type:'weight'},
+    {id:133,name:'플레이트 핀치',part:'전완',type:'time'},
+    {id:134,name:'그립퍼',part:'전완',type:'bodyweight'},
+    {id:135,name:'비하인드 백 리스트 컬',part:'전완',type:'weight'},
+    // 유산소 (14종)
     {id:120,name:'런닝머신',part:'유산소',type:'cardio'},
-    {id:121,name:'자전거',part:'유산소',type:'cardio'},
+    {id:121,name:'실내자전거',part:'유산소',type:'cardio'},
     {id:122,name:'일립티컬',part:'유산소',type:'cardio'},
     {id:123,name:'로잉머신',part:'유산소',type:'cardio'},
     {id:124,name:'스텝퍼',part:'유산소',type:'cardio'},
     {id:125,name:'줄넘기',part:'유산소',type:'cardio'},
     {id:126,name:'버피',part:'유산소',type:'cardio'},
+    {id:127,name:'스피닝',part:'유산소',type:'cardio'},
+    {id:128,name:'스프린트 인터벌',part:'유산소',type:'cardio'},
+    {id:129,name:'배틀로프',part:'유산소',type:'cardio'},
+    {id:1291,name:'트레드밀 인클라인 걷기',part:'유산소',type:'cardio'},
+    {id:1292,name:'에어바이크',part:'유산소',type:'cardio'},
+    {id:1293,name:'스키 에르그',part:'유산소',type:'cardio'},
+    {id:1294,name:'점핑잭',part:'유산소',type:'cardio'},
+    // 스트레칭/모빌리티 (8종)
+    {id:140,name:'폼롤러 (등)',part:'스트레칭',type:'time'},
+    {id:141,name:'폼롤러 (하체)',part:'스트레칭',type:'time'},
+    {id:142,name:'숄더 스트레칭',part:'스트레칭',type:'time'},
+    {id:143,name:'고관절 스트레칭',part:'스트레칭',type:'time'},
+    {id:144,name:'햄스트링 스트레칭',part:'스트레칭',type:'time'},
+    {id:145,name:'가슴 스트레칭',part:'스트레칭',type:'time'},
+    {id:146,name:'고양이-소 스트레칭',part:'스트레칭',type:'time'},
+    {id:147,name:'월 슬라이드',part:'스트레칭',type:'time'},
 ];
-const PARTS=['전체','가슴','등','어깨','하체','이두','삼두','복근','유산소'];
+const PARTS=['전체','가슴','등','어깨','하체','이두','삼두','복근','전완','유산소','스트레칭'];
 
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch{return d}}
 function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
@@ -377,6 +509,7 @@ function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
 let routines=load('routines',[]);
 let schedule=load('schedule',{});
 let history=load('history',[]);
+let inbodyRecords=load('inbodyRecords',[]);
 
 let currentTab='calendar';
 function switchTab(tab){
@@ -384,10 +517,11 @@ function switchTab(tab){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.tab-bar button').forEach(b=>b.classList.remove('active'));
     document.getElementById('page-'+tab).classList.add('active');
-    document.querySelectorAll('.tab-bar button')[['calendar','routines','history'].indexOf(tab)].classList.add('active');
+    document.querySelectorAll('.tab-bar button')[['calendar','routines','history','inbody'].indexOf(tab)].classList.add('active');
     if(tab==='calendar')renderCalendar();
     if(tab==='routines')renderRoutines();
     if(tab==='history')renderHistory();
+    if(tab==='inbody')renderInbody();
 }
 
 let calYear,calMonth,selectedDate;
@@ -441,9 +575,9 @@ function renderDayDetail(){
         plan.log.forEach(l=>{const ex=EXERCISES.find(x=>x.id===l.exerciseId);logHtml+=`<div style="margin-bottom:6px;"><span style="font-weight:600;">${ex?ex.name:'?'}</span>`;l.sets.forEach((s,i)=>{logHtml+=`<div style="font-size:13px;color:#aaa;margin-left:10px;">${i+1}세트: ${s.weight}kg × ${s.reps}회</div>`});logHtml+='</div>'});
         logHtml+=`<div style="font-size:13px;color:#007AFF;margin-top:8px;">총 운동시간: ${plan.duration||'-'}</div></div>`;
     }
-    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="card-title">${label} - ${routine.name}</div><span style="font-size:13px;">${statusText}</span></div><div class="routine-exercises">${tags}</div>${logHtml}${plan.status!=='completed'?`<div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" style="flex:1;" onclick="startWorkout('${selectedDate}')">운동 시작</button><button class="btn btn-danger btn-sm" onclick="removePlan('${selectedDate}')">삭제</button></div>`:''}</div>`;
+    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="card-title">${label} - ${routine.name}</div><span style="font-size:13px;">${statusText}</span></div><div class="routine-exercises">${tags}</div>${logHtml}<div style="display:flex;gap:8px;margin-top:12px;">${plan.status!=='completed'?`<button class="btn btn-primary" style="flex:1;" onclick="startWorkout('${selectedDate}')">운동 시작</button>`:''}<button class="btn btn-danger btn-sm" onclick="removePlan('${selectedDate}')">삭제</button></div></div>`;
 }
-function removePlan(ds){delete schedule[ds];save('schedule',schedule);renderCalendar()}
+function removePlan(ds){if(confirm('이 날의 기록을 삭제할까요?')){history=history.filter(h=>h.date!==ds);save('history',history);delete schedule[ds];save('schedule',schedule);renderCalendar()}}
 
 let assignDate=null;
 function openAssign(){
@@ -553,9 +687,9 @@ function renderHistory(){
     document.getElementById('historySummary').innerHTML=`<div class="summary-card"><div style="font-size:16px;font-weight:600;">이번 달 요약</div><div class="summary-stat"><div class="stat-item"><div class="stat-value">${mw.length}</div><div class="stat-label">운동 횟수</div></div><div class="stat-item"><div class="stat-value">${(tv/1000).toFixed(1)}</div><div class="stat-label">총 볼륨(톤)</div></div></div></div>`;
     if(history.length===0){document.getElementById('historyList').innerHTML='<div class="empty-state"><div class="emoji">📊</div><p>아직 운동 기록이 없습니다</p></div>';return}
     let html='';
-    history.forEach(h=>{
+    history.forEach((h,idx)=>{
         const names=h.log.map(l=>{const ex=EXERCISES.find(x=>x.id===l.exerciseId);return ex?ex.name:'?'});
-        html+=`<div class="card"><div style="display:flex;justify-content:space-between;"><div class="card-title">${h.routineName}</div><span style="font-size:13px;color:#888;">${h.date}</span></div><div class="card-sub">${h.duration} · ${names.join(', ')}</div><div style="margin-top:8px;">`;
+        html+=`<div class="card"><div style="display:flex;justify-content:space-between;"><div class="card-title">${h.routineName}</div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#888;">${h.date}</span><button class="delete-btn" onclick="deleteHistory(${idx})">삭제</button></div></div><div class="card-sub">${h.duration} · ${names.join(', ')}</div><div style="margin-top:8px;">`;
         h.log.forEach(l=>{const ex=EXERCISES.find(x=>x.id===l.exerciseId);if(l.sets.length>0){html+=`<div style="font-size:13px;margin-top:4px;"><span style="color:#ccc;">${ex?ex.name:'?'}</span>`;l.sets.forEach(s=>{html+=` <span style="color:#888;">${s.weight}kg×${s.reps}</span>`});html+='</div>'}});
         html+='</div></div>';
     });
@@ -564,6 +698,85 @@ function renderHistory(){
 
 function openModal(id){document.getElementById(id).classList.add('active')}
 function closeModal(id){document.getElementById(id).classList.remove('active')}
+function deleteHistory(idx){if(confirm('이 기록을 삭제할까요?')){const h=history[idx];if(schedule[h.date]&&schedule[h.date].status==='completed'){delete schedule[h.date];save('schedule',schedule)}history.splice(idx,1);save('history',history);renderHistory()}}
+
+// ===== 인바디 =====
+function renderInbody(){
+    document.getElementById('inbodyDate').value=formatDate(new Date());
+    renderInbodyChart();
+    renderInbodyHistory();
+}
+function saveInbody(){
+    const rec={
+        date:document.getElementById('inbodyDate').value,
+        weight:+document.getElementById('inbodyWeight').value||null,
+        muscle:+document.getElementById('inbodyMuscle').value||null,
+        fatPct:+document.getElementById('inbodyFat').value||null,
+        fatMass:+document.getElementById('inbodyFatMass').value||null,
+        bmi:+document.getElementById('inbodyBMI').value||null,
+        bmr:+document.getElementById('inbodyBMR').value||null,
+        water:+document.getElementById('inbodyWater').value||null,
+        score:+document.getElementById('inbodyScore').value||null,
+        timestamp:Date.now()
+    };
+    if(!rec.date){alert('날짜를 입력하세요');return}
+    if(!rec.weight&&!rec.muscle&&!rec.fatPct){alert('최소 한 항목은 입력하세요');return}
+    inbodyRecords.push(rec);
+    inbodyRecords.sort((a,b)=>a.date.localeCompare(b.date));
+    save('inbodyRecords',inbodyRecords);
+    // 입력 필드 초기화
+    ['inbodyWeight','inbodyMuscle','inbodyFat','inbodyFatMass','inbodyBMI','inbodyBMR','inbodyWater','inbodyScore'].forEach(id=>document.getElementById(id).value='');
+    alert('인바디 기록 저장! 💪');
+    renderInbodyChart();
+    renderInbodyHistory();
+}
+function renderInbodyChart(){
+    const el=document.getElementById('inbodyChart');
+    if(inbodyRecords.length<2){el.innerHTML='<div class="card"><div class="card-sub" style="text-align:center;padding:15px;">2회 이상 기록하면 변화 그래프가 표시됩니다</div></div>';return}
+    const last=inbodyRecords[inbodyRecords.length-1];
+    const prev=inbodyRecords[inbodyRecords.length-2];
+    function diff(cur,prv){if(!cur||!prv)return'';const d=cur-prv;return d>0?`<span style="color:#FF3B30;">+${d.toFixed(1)}</span>`:`<span style="color:#34C759;">${d.toFixed(1)}</span>`}
+    function diffGood(cur,prv){if(!cur||!prv)return'';const d=cur-prv;return d>0?`<span style="color:#34C759;">+${d.toFixed(1)}</span>`:`<span style="color:#FF3B30;">${d.toFixed(1)}</span>`}
+    let html=`<div class="summary-card"><div style="font-size:16px;font-weight:600;">최근 변화 (${prev.date} → ${last.date})</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">`;
+    if(last.weight)html+=`<div class="stat-item" style="text-align:left;"><div class="stat-label">체중</div><div style="font-size:18px;font-weight:600;">${last.weight}kg ${diff(last.weight,prev.weight)}</div></div>`;
+    if(last.muscle)html+=`<div class="stat-item" style="text-align:left;"><div class="stat-label">골격근량</div><div style="font-size:18px;font-weight:600;">${last.muscle}kg ${diffGood(last.muscle,prev.muscle)}</div></div>`;
+    if(last.fatPct)html+=`<div class="stat-item" style="text-align:left;"><div class="stat-label">체지방률</div><div style="font-size:18px;font-weight:600;">${last.fatPct}% ${diff(last.fatPct,prev.fatPct)}</div></div>`;
+    if(last.fatMass)html+=`<div class="stat-item" style="text-align:left;"><div class="stat-label">체지방량</div><div style="font-size:18px;font-weight:600;">${last.fatMass}kg ${diff(last.fatMass,prev.fatMass)}</div></div>`;
+    if(last.score)html+=`<div class="stat-item" style="text-align:left;"><div class="stat-label">인바디 점수</div><div style="font-size:18px;font-weight:600;">${last.score}점 ${diffGood(last.score,prev.score)}</div></div>`;
+    if(last.bmr)html+=`<div class="stat-item" style="text-align:left;"><div class="stat-label">기초대사량</div><div style="font-size:18px;font-weight:600;">${last.bmr}kcal ${diffGood(last.bmr,prev.bmr)}</div></div>`;
+    html+='</div></div>';
+    // 간단한 바 그래프 (체중/골격근/체지방 추이)
+    const recent=inbodyRecords.slice(-6);
+    if(recent.some(r=>r.weight)){
+        const maxW=Math.max(...recent.filter(r=>r.weight).map(r=>r.weight));
+        const minW=Math.min(...recent.filter(r=>r.weight).map(r=>r.weight));
+        const range=maxW-minW||1;
+        html+='<div class="card"><div class="card-title">체중 추이</div><div style="display:flex;align-items:flex-end;gap:8px;height:100px;margin-top:10px;">';
+        recent.forEach(r=>{if(r.weight){const pct=30+((r.weight-minW)/range)*70;html+=`<div style="flex:1;text-align:center;"><div style="font-size:11px;color:#ccc;margin-bottom:4px;">${r.weight}</div><div style="height:${pct}%;background:#007AFF;border-radius:4px 4px 0 0;min-height:10px;"></div><div style="font-size:10px;color:#888;margin-top:4px;">${r.date.slice(5)}</div></div>`}});
+        html+='</div></div>';
+    }
+    el.innerHTML=html;
+}
+function renderInbodyHistory(){
+    const el=document.getElementById('inbodyHistory');
+    if(inbodyRecords.length===0){el.innerHTML='<div class="empty-state"><div class="emoji">🏋️</div><p>인바디 기록을 추가해보세요!</p></div>';return}
+    let html='';
+    [...inbodyRecords].reverse().forEach((r,idx)=>{
+        const realIdx=inbodyRecords.length-1-idx;
+        html+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="card-title">${r.date}</div><button class="delete-btn" onclick="deleteInbody(${realIdx})">삭제</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;">`;
+        if(r.weight)html+=`<div><span style="color:#888;font-size:12px;">체중</span><div style="font-size:15px;">${r.weight}kg</div></div>`;
+        if(r.muscle)html+=`<div><span style="color:#888;font-size:12px;">골격근</span><div style="font-size:15px;">${r.muscle}kg</div></div>`;
+        if(r.fatPct)html+=`<div><span style="color:#888;font-size:12px;">체지방률</span><div style="font-size:15px;">${r.fatPct}%</div></div>`;
+        if(r.fatMass)html+=`<div><span style="color:#888;font-size:12px;">체지방량</span><div style="font-size:15px;">${r.fatMass}kg</div></div>`;
+        if(r.bmi)html+=`<div><span style="color:#888;font-size:12px;">BMI</span><div style="font-size:15px;">${r.bmi}</div></div>`;
+        if(r.bmr)html+=`<div><span style="color:#888;font-size:12px;">기초대사</span><div style="font-size:15px;">${r.bmr}kcal</div></div>`;
+        if(r.water)html+=`<div><span style="color:#888;font-size:12px;">체수분</span><div style="font-size:15px;">${r.water}L</div></div>`;
+        if(r.score)html+=`<div><span style="color:#888;font-size:12px;">점수</span><div style="font-size:15px;">${r.score}점</div></div>`;
+        html+='</div></div>';
+    });
+    el.innerHTML=html;
+}
+function deleteInbody(idx){if(confirm('이 인바디 기록을 삭제할까요?')){inbodyRecords.splice(idx,1);save('inbodyRecords',inbodyRecords);renderInbodyChart();renderInbodyHistory()}}
 
 initCalendar();
 </script>
