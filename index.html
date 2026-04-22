@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="운동기록">
+    <title>🏋️ 운동기록</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a; color: #fff;
+            min-height: 100vh; padding-bottom: 80px;
+            -webkit-user-select: none;
+        }
+        .tab-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            display: flex; background: #1a1a1a;
+            border-top: 1px solid #333;
+            padding-bottom: env(safe-area-inset-bottom); z-index: 100;
+        }
+        .tab-bar button {
+            flex: 1; padding: 10px 0; background: none; border: none;
+            color: #888; font-size: 11px; display: flex;
+            flex-direction: column; align-items: center; gap: 3px;
+        }
+        .tab-bar button.active { color: #007AFF; }
+        .tab-bar button .icon { font-size: 22px; }
+        .page { display: none; padding: 20px; padding-top: 60px; }
+        .page.active { display: block; }
+        .page-title {
+            font-size: 28px; font-weight: 700; margin-bottom: 20px;
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 15px 20px; background: #0a0a0a;
+            z-index: 50; border-bottom: 1px solid #222;
+        }
+        .card {
+            background: #1a1a1a; border-radius: 12px;
+            padding: 16px; margin-bottom: 12px;
+        }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card-sub { font-size: 13px; color: #888; }
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+        }
+        .btn-primary { background: #007AFF; color: white; }
+        .btn-danger { background: #FF3B30; color: white; }
+        .btn-secondary { background: #333; color: white; }
+        .btn-sm {
+            width: auto; padding: 8px 14px; font-size: 13px;
+            border-radius: 8px; display: inline-block;
+        }
+        input, select {
+            width: 100%; padding: 12px; border-radius: 10px;
+            border: 1px solid #333; background: #222; color: white;
+            font-size: 15px; margin-bottom: 10px;
+            -webkit-appearance: none;
+        }
+        input:focus, select:focus { outline: none; border-color: #007AFF; }
+        .exercise-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px; border-bottom: 1px solid #222; cursor: pointer;
+        }
+        .exercise-item:active { background: #222; }
+        .exercise-name { font-size: 15px; font-weight: 500; }
+        .exercise-part { font-size: 12px; color: #007AFF; margin-top: 3px; }
+        .check-mark { color: #007AFF; font-size: 20px; display: none; }
+        .exercise-item.selected .check-mark { display: block; }
+        .calendar-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 4px; text-align: center;
+        }
+        .calendar-header { font-size: 12px; color: #888; padding: 8px 0; }
+        .calendar-day {
+            padding: 10px 0; border-radius: 10px; font-size: 14px;
+            cursor: pointer; position: relative;
+        }
+        .calendar-day:active { background: #333; }
+        .calendar-day.today { color: #007AFF; font-weight: 700; }
+        .calendar-day.selected { background: #007AFF; color: white; }
+        .calendar-day.has-plan::after {
+            content: ''; position: absolute; bottom: 3px;
+            left: 50%; transform: translateX(-50%);
+            width: 5px; height: 5px; border-radius: 50%; background: #007AFF;
+        }
+        .calendar-day.completed::after { background: #34C759; }
+        .calendar-day.empty { pointer-events: none; }
+        .month-nav {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 15px;
+        }
+        .month-nav button {
+            background: none; border: none; color: #007AFF;
+            font-size: 20px; padding: 10px;
+        }
+        .month-nav .month-title { font-size: 18px; font-weight: 600; }
+        .routine-exercises { margin-top: 8px; }
+        .routine-exercise-tag {
+            display: inline-block; background: #333; color: #ccc;
+            padding: 4px 10px; border-radius: 15px; font-size: 12px;
+            margin: 2px 4px 2px 0;
+        }
+        .set-row {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        }
+        .set-row .set-num {
+            min-width: 35px; font-size: 13px; color: #888; text-align: center;
+        }
+        .set-row input {
+            flex: 1; margin-bottom: 0; padding: 10px; text-align: center;
+        }
+        .set-row .done-btn {
+            width: 40px; height: 40px; border-radius: 8px;
+            border: 2px solid #333; background: none; color: #888;
+            font-size: 18px; cursor: pointer;
+        }
+        .set-row .done-btn.completed { background: #007AFF; border-color: #007AFF; color: white; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #0a0a0a; z-index: 200; overflow-y: auto;
+            padding: 20px; padding-bottom: 100px;
+        }
+        .modal.active { display: block; }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-top: 10px;
+        }
+        .modal-header h2 { font-size: 20px; font-weight: 700; }
+        .modal-close {
+            background: none; border: none; color: #007AFF;
+            font-size: 16px; padding: 8px;
+        }
+        .category-filter {
+            display: flex; gap: 8px; overflow-x: auto;
+            padding-bottom: 10px; margin-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .category-filter::-webkit-scrollbar { display: none; }
+        .cat-btn {
+            padding: 7px 14px; border-radius: 20px; border: 1px solid #444;
+            background: none; color: #ccc; font-size: 13px; white-space: nowrap;
+        }
+        .cat-btn.active { background: #007AFF; border-color: #007AFF; color: white; }
+        .search-bar { position: relative; margin-bottom: 10px; }
+        .search-bar input { padding-left: 35px; }
+        .search-bar .search-icon {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: #888; font-size: 14px;
+        }
+        .workout-timer {
+            text-align: center; padding: 15px; background: #1a1a1a;
+            border-radius: 12px; margin-bottom: 15px;
+        }
+        .timer-display { font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .timer-label { font-size: 13px; color: #888; margin-top: 4px; }
+        .exercise-progress {
+            display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;
+        }
+        .exercise-progress::-webkit-scrollbar { display: none; }
+        .progress-dot {
+            min-width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; border: 2px solid #333; color: #888; cursor: pointer;
+        }
+        .progress-dot.current { border-color: #007AFF; color: #007AFF; }
+        .progress-dot.done { background: #007AFF; border-color: #007AFF; color: white; }
+        .rest-timer-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9); z-index: 300;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        .rest-timer-overlay.active { display: flex; }
+        .rest-time { font-size: 72px; font-weight: 700; }
+        .rest-label { font-size: 18px; color: #888; margin-bottom: 30px; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #666; }
+        .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+        .empty-state p { font-size: 15px; line-height: 1.6; }
+        .delete-btn {
+            background: none; border: none; color: #FF3B30;
+            font-size: 14px; padding: 5px;
+        }
+        .fab {
+            position: fixed; bottom: 90px; right: 20px;
+            width: 56px; height: 56px; border-radius: 28px;
+            background: #007AFF; border: none; color: white;
+            font-size: 28px; box-shadow: 0 4px 12px rgba(0,122,255,0.4);
+            z-index: 90; cursor: pointer;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 14px; padding: 20px; margin-bottom: 15px;
+        }
+        .summary-stat { display: flex; justify-content: space-around; margin-top: 12px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 22px; font-weight: 700; color: #007AFF; }
+        .stat-label { font-size: 11px; color: #888; margin-top: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="page active" id="page-calendar">
+    <div class="page-title">📅 캘린더</div>
+    <div class="month-nav">
+        <button onclick="changeMonth(-1)">◀</button>
+        <span class="month-title" id="monthTitle"></span>
+        <button onclick="changeMonth(1)">▶</button>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+    <div id="dayDetail" style="margin-top:20px;"></div>
+</div>
+
+<div class="page" id="page-routines">
+    <div class="page-title">💪 루틴</div>
+    <div id="routineList"></div>
+    <button class="fab" onclick="openCreateRoutine()">+</button>
+</div>
+
+<div class="page" id="page-history">
+    <div class="page-title">📊 기록</div>
+    <div id="historySummary"></div>
+    <div id="historyList"></div>
+</div>
+
+<!-- 루틴 만들기 모달 -->
+<div class="modal" id="modal-create-routine">
+    <div class="modal-header">
+        <button class="modal-close" onclick="closeModal('modal-create-routine')">취소</button>
+        <h2>루틴 만들기</h2>
+        <button class="modal-close" onclick="saveRoutine()">저장</button>
+    </div>
+    <input type="text" id="routineName" placeholder="루틴 이름 (예: 가슴+삼두)">
+    <div id="selectedExercises" style="margin-bottom:15px;"></div>
+    <button class="btn btn-secondary" onclick="openExercisePicker()" style="margin-bottom:15px;">+ 운동 추가</button>
+    <div id="routineExerciseConfig"></div>
+</div>
+
+<!-- 운동 선택 모달 -->
+<div class="modal" id="modal-exercise-picker">
+    <div class="modal-header">
+        <button class="modal-close" onclick="closeModal('modal-exercise-picker')">취소</button>
+        <h2>운동 선택</h2>
+        <button class="modal-close" onclick="confirmExercisePick()">완료</button>
+    </div>
+    <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="exerciseSearch" placeholder="운동 검색" oninput="filterExercises()">
+    </div>
+    <div class="category-filter" id="categoryFilter"></div>
+    <div id="exercisePickerList"></div>
+</div>
+
+<!-- 루틴 배정 모달 -->
+<div class="modal" id="modal-assign">
+    <div class="modal-header">
+        <button class="modal-close" onclick="closeModal('modal-assign')">취소</button>
+        <h2>루틴 배정</h2>
+        <button class="modal-close" onclick="saveAssign()">완료</button>
+    </div>
+    <p style="color:#888;margin-bottom:15px;">어떤 루틴을 배정할까요?</p>
+    <div id="assignRoutineList"></div>
+</div>
+
+<!-- 운동 수행 모달 -->
+<div class="modal" id="modal-workout">
+    <div class="modal-header">
+        <button class="modal-close" onclick="confirmEndWorkout()">종료</button>
+        <h2 id="workoutTitle">운동 중</h2>
+        <button class="modal-close" onclick="finishWorkout()">완료</button>
+    </div>
+    <div class="workout-timer">
+        <div class="timer-display" id="workoutTimer">00:00</div>
+        <div class="timer-label">운동 시간</div>
+    </div>
+    <div class="exercise-progress" id="exerciseProgress"></div>
+    <div id="currentExerciseArea"></div>
+</div>
+
+<!-- 휴식 타이머 -->
+<div class="rest-timer-overlay" id="restTimer">
+    <div class="rest-label">휴식 시간</div>
+    <div class="rest-time" id="restTimeDisplay">01:30</div>
+    <button class="btn btn-primary" style="width:auto;padding:14px 40px;margin-top:30px;" onclick="skipRest()">건너뛰기</button>
+</div>
+
+<div class="tab-bar">
+    <button class="active" onclick="switchTab('calendar')">
+        <span class="icon">📅</span>캘린더
+    </button>
+    <button onclick="switchTab('routines')">
+        <span class="icon">💪</span>루틴
+    </button>
+    <button onclick="switchTab('history')">
+        <span class="icon">📊</span>기록
+    </button>
+</div>
+
+<script>
+const EXERCISES = [
+    {id:1,name:'벤치프레스',part:'가슴',type:'weight'},
+    {id:2,name:'인클라인 벤치프레스',part:'가슴',type:'weight'},
+    {id:3,name:'디클라인 벤치프레스',part:'가슴',type:'weight'},
+    {id:4,name:'덤벨 프레스',part:'가슴',type:'weight'},
+    {id:5,name:'인클라인 덤벨 프레스',part:'가슴',type:'weight'},
+    {id:6,name:'덤벨 플라이',part:'가슴',type:'weight'},
+    {id:7,name:'케이블 크로스오버',part:'가슴',type:'weight'},
+    {id:8,name:'펙덱 플라이',part:'가슴',type:'weight'},
+    {id:9,name:'체스트 프레스 머신',part:'가슴',type:'weight'},
+    {id:10,name:'딥스',part:'가슴',type:'bodyweight'},
+    {id:11,name:'푸쉬업',part:'가슴',type:'bodyweight'},
+    {id:20,name:'데드리프트',part:'등',type:'weight'},
+    {id:21,name:'바벨 로우',part:'등',type:'weight'},
+    {id:22,name:'덤벨 로우',part:'등',type:'weight'},
+    {id:23,name:'랫 풀다운',part:'등',type:'weight'},
+    {id:24,name:'시티드 로우',part:'등',type:'weight'},
+    {id:25,name:'티바 로우',part:'등',type:'weight'},
+    {id:26,name:'풀업',part:'등',type:'bodyweight'},
+    {id:27,name:'친업',part:'등',type:'bodyweight'},
+    {id:28,name:'케이블 풀오버',part:'등',type:'weight'},
+    {id:29,name:'페이스 풀',part:'등',type:'weight'},
+    {id:40,name:'오버헤드 프레스',part:'어깨',type:'weight'},
+    {id:41,name:'덤벨 숄더 프레스',part:'어깨',type:'weight'},
+    {id:42,name:'사이드 레터럴 레이즈',part:'어깨',type:'weight'},
+    {id:43,name:'프론트 레이즈',part:'어깨',type:'weight'},
+    {id:44,name:'리어 델트 플라이',part:'어깨',type:'weight'},
+    {id:45,name:'업라이트 로우',part:'어깨',type:'weight'},
+    {id:46,name:'아놀드 프레스',part:'어깨',type:'weight'},
+    {id:47,name:'숄더 프레스 머신',part:'어깨',type:'weight'},
+    {id:60,name:'스쿼트',part:'하체',type:'weight'},
+    {id:61,name:'프론트 스쿼트',part:'하체',type:'weight'},
+    {id:62,name:'레그 프레스',part:'하체',type:'weight'},
+    {id:63,name:'레그 익스텐션',part:'하체',type:'weight'},
+    {id:64,name:'레그 컬',part:'하체',type:'weight'},
+    {id:65,name:'런지',part:'하체',type:'weight'},
+    {id:66,name:'불가리안 스플릿 스쿼트',part:'하체',type:'weight'},
+    {id:67,name:'힙 쓰러스트',part:'하체',type:'weight'},
+    {id:68,name:'카프 레이즈',part:'하체',type:'weight'},
+    {id:69,name:'루마니안 데드리프트',part:'하체',type:'weight'},
+    {id:70,name:'핵 스쿼트',part:'하체',type:'weight'},
+    {id:71,name:'고블릿 스쿼트',part:'하체',type:'weight'},
+    {id:80,name:'바벨 컬',part:'이두',type:'weight'},
+    {id:81,name:'덤벨 컬',part:'이두',type:'weight'},
+    {id:82,name:'해머 컬',part:'이두',type:'weight'},
+    {id:83,name:'프리처 컬',part:'이두',type:'weight'},
+    {id:84,name:'인클라인 덤벨 컬',part:'이두',type:'weight'},
+    {id:85,name:'케이블 컬',part:'이두',type:'weight'},
+    {id:86,name:'컨센트레이션 컬',part:'이두',type:'weight'},
+    {id:90,name:'클로즈그립 벤치프레스',part:'삼두',type:'weight'},
+    {id:91,name:'트라이셉스 푸쉬다운',part:'삼두',type:'weight'},
+    {id:92,name:'오버헤드 트라이셉스 익스텐션',part:'삼두',type:'weight'},
+    {id:93,name:'스컬크러셔',part:'삼두',type:'weight'},
+    {id:94,name:'킥백',part:'삼두',type:'weight'},
+    {id:95,name:'덤벨 오버헤드 익스텐션',part:'삼두',type:'weight'},
+    {id:100,name:'크런치',part:'복근',type:'bodyweight'},
+    {id:101,name:'레그 레이즈',part:'복근',type:'bodyweight'},
+    {id:102,name:'플랭크',part:'복근',type:'time'},
+    {id:103,name:'행잉 레그 레이즈',part:'복근',type:'bodyweight'},
+    {id:104,name:'러시안 트위스트',part:'복근',type:'bodyweight'},
+    {id:105,name:'바이시클 크런치',part:'복근',type:'bodyweight'},
+    {id:106,name:'사이드 플랭크',part:'복근',type:'time'},
+    {id:107,name:'ab 롤아웃',part:'복근',type:'bodyweight'},
+    {id:120,name:'런닝머신',part:'유산소',type:'cardio'},
+    {id:121,name:'자전거',part:'유산소',type:'cardio'},
+    {id:122,name:'일립티컬',part:'유산소',type:'cardio'},
+    {id:123,name:'로잉머신',part:'유산소',type:'cardio'},
+    {id:124,name:'스텝퍼',part:'유산소',type:'cardio'},
+    {id:125,name:'줄넘기',part:'유산소',type:'cardio'},
+    {id:126,name:'버피',part:'유산소',type:'cardio'},
+];
+const PARTS=['전체','가슴','등','어깨','하체','이두','삼두','복근','유산소'];
+
+function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch{return d}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+
+let routines=load('routines',[]);
+let schedule=load('schedule',{});
+let history=load('history',[]);
+
+let currentTab='calendar';
+function switchTab(tab){
+    currentTab=tab;
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab-bar button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('page-'+tab).classList.add('active');
+    document.querySelectorAll('.tab-bar button')[['calendar','routines','history'].indexOf(tab)].classList.add('active');
+    if(tab==='calendar')renderCalendar();
+    if(tab==='routines')renderRoutines();
+    if(tab==='history')renderHistory();
+}
+
+let calYear,calMonth,selectedDate;
+function initCalendar(){
+    const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();
+    selectedDate=formatDate(n);renderCalendar();
+}
+function formatDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function changeMonth(dir){
+    calMonth+=dir;
+    if(calMonth<0){calMonth=11;calYear--}
+    if(calMonth>11){calMonth=0;calYear++}
+    renderCalendar();
+}
+function renderCalendar(){
+    document.getElementById('monthTitle').textContent=`${calYear}년 ${calMonth+1}월`;
+    const grid=document.getElementById('calendarGrid');
+    const days=['일','월','화','수','목','금','토'];
+    let html=days.map(d=>`<div class="calendar-header">${d}</div>`).join('');
+    const firstDay=new Date(calYear,calMonth,1).getDay();
+    const lastDate=new Date(calYear,calMonth+1,0).getDate();
+    const today=formatDate(new Date());
+    for(let i=0;i<firstDay;i++)html+='<div class="calendar-day empty"></div>';
+    for(let d=1;d<=lastDate;d++){
+        const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        let cls='calendar-day';
+        if(ds===today)cls+=' today';
+        if(ds===selectedDate)cls+=' selected';
+        if(schedule[ds])cls+=schedule[ds].status==='completed'?' completed':' has-plan';
+        html+=`<div class="${cls}" onclick="selectDate('${ds}')">${d}</div>`;
+    }
+    grid.innerHTML=html;renderDayDetail();
+}
+function selectDate(ds){selectedDate=ds;renderCalendar()}
+function renderDayDetail(){
+    const el=document.getElementById('dayDetail');
+    const plan=schedule[selectedDate];
+    const dObj=new Date(selectedDate+'T00:00:00');
+    const label=`${dObj.getMonth()+1}월 ${dObj.getDate()}일`;
+    if(!plan){
+        el.innerHTML=`<div class="card"><div class="card-title">${label}</div><div class="empty-state" style="padding:20px;"><p style="color:#888;">운동 계획이 없습니다</p></div><button class="btn btn-primary" style="margin-top:10px;" onclick="openAssign()">루틴 배정하기</button></div>`;
+        return;
+    }
+    const routine=routines.find(r=>r.id===plan.routineId);
+    if(!routine){delete schedule[selectedDate];save('schedule',schedule);renderDayDetail();return}
+    const statusText=plan.status==='completed'?'✅ 완료':'📋 예정';
+    let tags=routine.exercises.map(e=>{const ex=EXERCISES.find(x=>x.id===e.exerciseId);return`<span class="routine-exercise-tag">${ex?ex.name:'?'}</span>`}).join('');
+    let logHtml='';
+    if(plan.status==='completed'&&plan.log){
+        logHtml='<div style="margin-top:12px;border-top:1px solid #333;padding-top:12px;"><div style="font-size:13px;color:#888;margin-bottom:8px;">운동 기록</div>';
+        plan.log.forEach(l=>{const ex=EXERCISES.find(x=>x.id===l.exerciseId);logHtml+=`<div style="margin-bottom:6px;"><span style="font-weight:600;">${ex?ex.name:'?'}</span>`;l.sets.forEach((s,i)=>{logHtml+=`<div style="font-size:13px;color:#aaa;margin-left:10px;">${i+1}세트: ${s.weight}kg × ${s.reps}회</div>`});logHtml+='</div>'});
+        logHtml+=`<div style="font-size:13px;color:#007AFF;margin-top:8px;">총 운동시간: ${plan.duration||'-'}</div></div>`;
+    }
+    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="card-title">${label} - ${routine.name}</div><span style="font-size:13px;">${statusText}</span></div><div class="routine-exercises">${tags}</div>${logHtml}${plan.status!=='completed'?`<div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" style="flex:1;" onclick="startWorkout('${selectedDate}')">운동 시작</button><button class="btn btn-danger btn-sm" onclick="removePlan('${selectedDate}')">삭제</button></div>`:''}</div>`;
+}
+function removePlan(ds){delete schedule[ds];save('schedule',schedule);renderCalendar()}
+
+let assignDate=null;
+function openAssign(){
+    assignDate=selectedDate;let html='';
+    if(routines.length===0){html='<div class="empty-state"><div class="emoji">💪</div><p>루틴을 먼저 만들어주세요!</p></div>'}
+    else{routines.forEach(r=>{const tags=r.exercises.map(e=>{const ex=EXERCISES.find(x=>x.id===e.exerciseId);return`<span class="routine-exercise-tag">${ex?ex.name:'?'}</span>`}).join('');html+=`<div class="card" onclick="assignRoutine(${r.id})" style="cursor:pointer;"><div class="card-title">${r.name}</div><div class="routine-exercises">${tags}</div></div>`})}
+    document.getElementById('assignRoutineList').innerHTML=html;openModal('modal-assign');
+}
+function assignRoutine(rid){schedule[assignDate]={routineId:rid,status:'planned'};save('schedule',schedule);closeModal('modal-assign');renderCalendar()}
+function saveAssign(){closeModal('modal-assign')}
+
+let editingRoutine=null,tempExercises=[];
+function renderRoutines(){
+    const el=document.getElementById('routineList');
+    if(routines.length===0){el.innerHTML='<div class="empty-state"><div class="emoji">💪</div><p>루틴을 만들어보세요!<br>+ 버튼을 눌러 시작하세요</p></div>';return}
+    let html='';
+    routines.forEach(r=>{
+        const tags=r.exercises.map(e=>{const ex=EXERCISES.find(x=>x.id===e.exerciseId);return`<span class="routine-exercise-tag">${ex?ex.name:'?'}</span>`}).join('');
+        const parts=[...new Set(r.exercises.map(e=>{const ex=EXERCISES.find(x=>x.id===e.exerciseId);return ex?ex.part:''}))].join(', ');
+        html+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:start;"><div><div class="card-title">${r.name}</div><div class="card-sub">${parts} · ${r.exercises.length}종목</div></div><button class="delete-btn" onclick="deleteRoutine(${r.id})">삭제</button></div><div class="routine-exercises" style="margin-top:10px;">${tags}</div></div>`;
+    });
+    el.innerHTML=html;
+}
+function openCreateRoutine(){editingRoutine=null;tempExercises=[];document.getElementById('routineName').value='';renderRoutineConfig();openModal('modal-create-routine')}
+function deleteRoutine(id){if(confirm('이 루틴을 삭제할까요?')){routines=routines.filter(r=>r.id!==id);save('routines',routines);renderRoutines()}}
+function renderRoutineConfig(){
+    let tagsHtml='';
+    tempExercises.forEach((te,idx)=>{const ex=EXERCISES.find(x=>x.id===te.exerciseId);tagsHtml+=`<span class="routine-exercise-tag">${ex?ex.name:'?'} <span onclick="removeTempExercise(${idx})" style="color:#FF3B30;cursor:pointer;">✕</span></span>`});
+    document.getElementById('selectedExercises').innerHTML=tagsHtml;
+    let configHtml='';
+    tempExercises.forEach((te,idx)=>{const ex=EXERCISES.find(x=>x.id===te.exerciseId);configHtml+=`<div class="card"><div class="card-title">${ex?ex.name:'?'}</div><div style="display:flex;gap:8px;margin-top:8px;"><div style="flex:1;"><label style="font-size:12px;color:#888;">세트</label><input type="number" value="${te.sets}" min="1" onchange="tempExercises[${idx}].sets=+this.value" style="margin-top:4px;"></div><div style="flex:1;"><label style="font-size:12px;color:#888;">횟수</label><input type="number" value="${te.reps}" min="1" onchange="tempExercises[${idx}].reps=+this.value" style="margin-top:4px;"></div><div style="flex:1;"><label style="font-size:12px;color:#888;">무게(kg)</label><input type="number" value="${te.weight}" min="0" step="2.5" onchange="tempExercises[${idx}].weight=+this.value" style="margin-top:4px;"></div></div><div style="margin-top:8px;"><label style="font-size:12px;color:#888;">휴식(초)</label><input type="number" value="${te.rest}" min="0" step="10" onchange="tempExercises[${idx}].rest=+this.value"></div></div>`});
+    document.getElementById('routineExerciseConfig').innerHTML=configHtml;
+}
+function removeTempExercise(idx){tempExercises.splice(idx,1);renderRoutineConfig()}
+function saveRoutine(){
+    const name=document.getElementById('routineName').value.trim();
+    if(!name){alert('루틴 이름을 입력하세요');return}
+    if(tempExercises.length===0){alert('운동을 추가하세요');return}
+    routines.push({id:Date.now(),name,exercises:tempExercises.map(e=>({...e}))});
+    save('routines',routines);closeModal('modal-create-routine');switchTab('routines');
+}
+
+let pickedIds=[],filterPart='전체';
+function openExercisePicker(){pickedIds=tempExercises.map(e=>e.exerciseId);filterPart='전체';renderCategoryFilter();renderExercisePicker();openModal('modal-exercise-picker')}
+function renderCategoryFilter(){document.getElementById('categoryFilter').innerHTML=PARTS.map(p=>`<button class="cat-btn ${p===filterPart?'active':''}" onclick="filterPart='${p}';renderCategoryFilter();renderExercisePicker();">${p}</button>`).join('')}
+function filterExercises(){renderExercisePicker()}
+function renderExercisePicker(){
+    const search=document.getElementById('exerciseSearch').value.toLowerCase();
+    let filtered=EXERCISES;
+    if(filterPart!=='전체')filtered=filtered.filter(e=>e.part===filterPart);
+    if(search)filtered=filtered.filter(e=>e.name.toLowerCase().includes(search));
+    document.getElementById('exercisePickerList').innerHTML=filtered.map(e=>`<div class="exercise-item ${pickedIds.includes(e.id)?'selected':''}" onclick="togglePick(${e.id})"><div><div class="exercise-name">${e.name}</div><div class="exercise-part">${e.part}</div></div><span class="check-mark">✓</span></div>`).join('');
+}
+function togglePick(id){if(pickedIds.includes(id))pickedIds=pickedIds.filter(x=>x!==id);else pickedIds.push(id);renderExercisePicker()}
+function confirmExercisePick(){
+    const existingIds=tempExercises.map(e=>e.exerciseId);
+    tempExercises=tempExercises.filter(e=>pickedIds.includes(e.exerciseId));
+    pickedIds.forEach(id=>{if(!existingIds.includes(id))tempExercises.push({exerciseId:id,sets:4,reps:12,weight:0,rest:90})});
+    closeModal('modal-exercise-picker');renderRoutineConfig();
+}
+
+let workoutData=null,workoutTimerInterval=null,workoutStartTime=null,currentExIdx=0,restInterval=null;
+function startWorkout(ds){
+    const plan=schedule[ds];const routine=routines.find(r=>r.id===plan.routineId);if(!routine)return;
+    workoutData={dateStr:ds,routine,exercises:routine.exercises.map(e=>({exerciseId:e.exerciseId,plannedSets:e.sets,plannedReps:e.reps,plannedWeight:e.weight,rest:e.rest,sets:Array.from({length:e.sets},()=>({weight:e.weight,reps:e.reps,done:false}))}))};
+    currentExIdx=0;workoutStartTime=Date.now();
+    document.getElementById('workoutTitle').textContent=routine.name;
+    startWorkoutTimer();renderWorkoutExercises();openModal('modal-workout');
+}
+function startWorkoutTimer(){clearInterval(workoutTimerInterval);workoutTimerInterval=setInterval(()=>{const e=Math.floor((Date.now()-workoutStartTime)/1000);document.getElementById('workoutTimer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`},1000)}
+function renderWorkoutExercises(){
+    let dotsHtml='';workoutData.exercises.forEach((e,i)=>{const allDone=e.sets.every(s=>s.done);let cls='progress-dot';if(i===currentExIdx)cls+=' current';if(allDone)cls+=' done';dotsHtml+=`<div class="${cls}" onclick="currentExIdx=${i};renderWorkoutExercises();">${i+1}</div>`});
+    document.getElementById('exerciseProgress').innerHTML=dotsHtml;
+    const ex=workoutData.exercises[currentExIdx];const exInfo=EXERCISES.find(x=>x.id===ex.exerciseId);
+    let html=`<div class="card"><div class="card-title">${exInfo?exInfo.name:'?'}</div><div class="card-sub" style="margin-bottom:12px;">${exInfo?exInfo.part:''} · 목표 ${ex.plannedSets}세트 × ${ex.plannedReps}회 × ${ex.plannedWeight}kg</div><div style="display:flex;gap:8px;margin-bottom:10px;color:#888;font-size:12px;"><span style="min-width:35px;text-align:center;">세트</span><span style="flex:1;text-align:center;">kg</span><span style="flex:1;text-align:center;">횟수</span><span style="width:40px;text-align:center;">완료</span></div>`;
+    ex.sets.forEach((s,i)=>{html+=`<div class="set-row"><span class="set-num">${i+1}</span><input type="number" value="${s.weight}" step="2.5" onchange="updateSet(${currentExIdx},${i},'weight',+this.value)"><input type="number" value="${s.reps}" onchange="updateSet(${currentExIdx},${i},'reps',+this.value)"><button class="done-btn ${s.done?'completed':''}" onclick="toggleSetDone(${currentExIdx},${i})">✓</button></div>`});
+    html+=`<button class="btn btn-secondary" style="margin-top:8px;" onclick="addSet(${currentExIdx})">+ 세트 추가</button></div>`;
+    html+='<div style="display:flex;gap:8px;margin-top:12px;">';
+    if(currentExIdx>0)html+=`<button class="btn btn-secondary" style="flex:1;" onclick="currentExIdx--;renderWorkoutExercises();">◀ 이전</button>`;
+    if(currentExIdx<workoutData.exercises.length-1)html+=`<button class="btn btn-primary" style="flex:1;" onclick="currentExIdx++;renderWorkoutExercises();">다음 ▶</button>`;
+    html+='</div>';
+    document.getElementById('currentExerciseArea').innerHTML=html;
+}
+function updateSet(ei,si,f,v){workoutData.exercises[ei].sets[si][f]=v}
+function toggleSetDone(ei,si){const s=workoutData.exercises[ei].sets[si];s.done=!s.done;renderWorkoutExercises();if(s.done){startRestTimer(workoutData.exercises[ei].rest||90)}}
+function addSet(ei){const ex=workoutData.exercises[ei];const last=ex.sets[ex.sets.length-1];ex.sets.push({weight:last.weight,reps:last.reps,done:false});renderWorkoutExercises()}
+function startRestTimer(sec){
+    let rem=sec;document.getElementById('restTimer').classList.add('active');updateRestDisplay(rem);
+    clearInterval(restInterval);restInterval=setInterval(()=>{rem--;updateRestDisplay(rem);if(rem<=0)skipRest()},1000);
+}
+function updateRestDisplay(sec){document.getElementById('restTimeDisplay').textContent=`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`}
+function skipRest(){clearInterval(restInterval);document.getElementById('restTimer').classList.remove('active')}
+function confirmEndWorkout(){if(confirm('운동을 종료할까요? 기록이 저장되지 않습니다.')){clearInterval(workoutTimerInterval);closeModal('modal-workout')}}
+function finishWorkout(){
+    clearInterval(workoutTimerInterval);
+    const elapsed=Math.floor((Date.now()-workoutStartTime)/1000);const duration=`${Math.floor(elapsed/60)}분`;
+    const log=workoutData.exercises.map(e=>({exerciseId:e.exerciseId,sets:e.sets.filter(s=>s.done).map(s=>({weight:s.weight,reps:s.reps}))}));
+    schedule[workoutData.dateStr]={...schedule[workoutData.dateStr],status:'completed',log,duration};save('schedule',schedule);
+    history.unshift({date:workoutData.dateStr,routineName:workoutData.routine.name,duration,log,timestamp:Date.now()});save('history',history);
+    closeModal('modal-workout');renderCalendar();alert(`운동 완료! 🎉\n운동 시간: ${duration}`);
+}
+
+function renderHistory(){
+    const thisMonth=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    const mw=history.filter(h=>h.date.startsWith(thisMonth));
+    const tv=mw.reduce((sum,h)=>sum+h.log.reduce((s,l)=>s+l.sets.reduce((ss,set)=>ss+set.weight*set.reps,0),0),0);
+    document.getElementById('historySummary').innerHTML=`<div class="summary-card"><div style="font-size:16px;font-weight:600;">이번 달 요약</div><div class="summary-stat"><div class="stat-item"><div class="stat-value">${mw.length}</div><div class="stat-label">운동 횟수</div></div><div class="stat-item"><div class="stat-value">${(tv/1000).toFixed(1)}</div><div class="stat-label">총 볼륨(톤)</div></div></div></div>`;
+    if(history.length===0){document.getElementById('historyList').innerHTML='<div class="empty-state"><div class="emoji">📊</div><p>아직 운동 기록이 없습니다</p></div>';return}
+    let html='';
+    history.forEach(h=>{
+        const names=h.log.map(l=>{const ex=EXERCISES.find(x=>x.id===l.exerciseId);return ex?ex.name:'?'});
+        html+=`<div class="card"><div style="display:flex;justify-content:space-between;"><div class="card-title">${h.routineName}</div><span style="font-size:13px;color:#888;">${h.date}</span></div><div class="card-sub">${h.duration} · ${names.join(', ')}</div><div style="margin-top:8px;">`;
+        h.log.forEach(l=>{const ex=EXERCISES.find(x=>x.id===l.exerciseId);if(l.sets.length>0){html+=`<div style="font-size:13px;margin-top:4px;"><span style="color:#ccc;">${ex?ex.name:'?'}</span>`;l.sets.forEach(s=>{html+=` <span style="color:#888;">${s.weight}kg×${s.reps}</span>`});html+='</div>'}});
+        html+='</div></div>';
+    });
+    document.getElementById('historyList').innerHTML=html;
+}
+
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+
+initCalendar();
+</script>
+</body>
+</html>
